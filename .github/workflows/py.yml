@@ -45,6 +45,6 @@ jobs:
           python -m pip install -U poetry==1.0.3
           poetry config virtualenvs.create false
       - name: Install dependencies (mandatory + optional)
-        run: python -m poetry install --extras "examples-tensorflow"
+        run: python -m poetry install --extras "examples-pytorch" --extras "examples-tensorflow"
       - name: Lint + Test (isort/black/mypy/pylint/pytest)
         run: ./dev/test-examples.sh
