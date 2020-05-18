@@ -100,7 +100,9 @@ def main() -> None:
     configure("server", args.log_file, args.log_host)
 
     # Load evaluation data
-    _, xy_test = client.load_data(partition=0, num_clients=1, dry_run=args.dry_run)
+    _, xy_test = client.load_data(
+        iid_fraction=1, partition=0, num_partitions=1, dry_run=args.dry_run
+    )
 
     # Create client_manager, strategy, and server
     client_manager = flwr.SimpleClientManager()

@@ -55,13 +55,25 @@ def main() -> None:
         "--partition", type=int, required=True, help="Partition index (no default)"
     )
     parser.add_argument(
-        "--clients", type=int, required=True, help="Number of clients (no default)",
+        "--num_partitions",
+        type=int,
+        required=True,
+        help="Number of dataset partitions (no default)",
     )
     parser.add_argument(
         "--delay_factor",
         type=float,
         default=0.0,
         help="Delay factor increases the time batches take to compute (default: 0.0)",
+    )
+
+    # Dataset flags which will be replaced in the near future
+    parser.add_argument(
+        "--iid_fraction",
+        type=float,
+        required=True,
+        choices=[i / 10 for i in range(11)],  # 0.0 till 1.0 in 0.1 steps
+        help="Fraction of dataset which is IID (no default)",
     )
     parser.add_argument(
         "--dry_run", type=bool, default=False, help="Dry run (default: False)"
@@ -72,6 +84,7 @@ def main() -> None:
     parser.add_argument(
         "--log_host", type=str, help="HTTP log handler host (no default)",
     )
+
     args = parser.parse_args()
 
     # Configure logger
@@ -80,7 +93,10 @@ def main() -> None:
     # Load model and data
     model = orig_cnn(input_shape=(28, 28, 1), seed=SEED)
     xy_train, xy_test = load_data(
-        partition=args.partition, num_clients=args.clients, dry_run=args.dry_run
+        iid_fraction=args.iid_fraction,
+        partition=args.partition,
+        num_partitions=args.num_partitions,
+        dry_run=args.dry_run,
     )
 
     # Start client
@@ -211,12 +227,12 @@ def get_lr_schedule(
 
 
 def load_data(
-    partition: int, num_clients: int, dry_run: bool
+    iid_fraction: float, partition: int, num_partitions: int, dry_run: bool
 ) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
     """Load partition of randomly shuffled Fashion-MNIST subset."""
     # Load training and test data (ignoring the test data for now)
     xy_partitions, (x_test, y_test) = tf_fashion_mnist_partitioned.load_data(
-        iid_fraction=0.0, num_partitions=num_clients
+        iid_fraction=iid_fraction, num_partitions=num_partitions
     )
 
     # Take partition
@@ -224,7 +240,7 @@ def load_data(
 
     # Take a subset
     x_test, y_test = shuffle(x_test, y_test, seed=SEED)
-    x_test, y_test = get_partition(x_test, y_test, partition, num_clients)
+    x_test, y_test = get_partition(x_test, y_test, partition, num_partitions)
 
     # Adjust x sets shape for model
     x_train = adjust_x_shape(x_train)
@@ -252,10 +268,10 @@ def shuffle(
 
 
 def get_partition(
-    x_orig: np.ndarray, y_orig: np.ndarray, partition: int, num_clients: int
+    x_orig: np.ndarray, y_orig: np.ndarray, partition: int, num_partitions: int
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Return a single partition of an equally partitioned dataset."""
-    step_size = len(x_orig) / num_clients
+    step_size = len(x_orig) / num_partitions
     start_index = int(step_size * partition)
     end_index = int(start_index + step_size)
     return x_orig[start_index:end_index], y_orig[start_index:end_index]

@@ -60,6 +60,8 @@ def client_command(
     log_host: str,
     grpc_server_address: str,
     cid: str,
+    delay_factor: float,
+    iid_fraction: float,
     partition: int,
     num_partitions: int,
 ) -> str:
@@ -70,8 +72,10 @@ flower_benchmark.tf_fashion_mnist.client \
 --grpc_server_address={grpc_server_address} \
 --grpc_server_port=8080 \
 --cid={cid} \
+--delay_factor={delay_factor} \
+--iid_fraction={iid_fraction} \
 --partition={partition} \
---clients={num_partitions} \
+--num_partitions={num_partitions} \
 "
 
 
@@ -93,7 +97,9 @@ def run(
     min_num_clients: int,
     training_round_timeout: int,
     # Client parameters
-    num_clients: int,
+    idd_fraction: float,
+    num_partitions: int,
+    delay_factor: float,
 ) -> None:
     """Run benchmark."""
     wheel_filename = CONFIG.get("paths", "wheel_filename")
@@ -143,16 +149,18 @@ def run(
 
     # Start flower clients
     client_id, _, _, _, _ = cluster.instances["clients"][0]
-    cluster.exec(client_id, "python3.7 -m flower_benchmark.tf_fashion_mnist.download")
-    for i in range(0, int(num_clients)):
+    cluster.exec(client_id, f"python3.7 -m flower_benchmark.tf_fashion_mnist.download")
+    for i in range(0, int(num_partitions)):
         cluster.exec(
             client_id,
             client_command(
                 log_host=f"{logserver_private_ip}:8081",
                 grpc_server_address=server_private_ip,
                 cid=str(i),
+                delay_factor=delay_factor,
+                iid_fraction=idd_fraction,
                 partition=i,
-                num_partitions=num_clients,
+                num_partitions=num_partitions,
             ),
         )
 
@@ -187,7 +195,9 @@ def main() -> None:
         min_sample_size=setting.min_sample_size,
         min_num_clients=setting.min_num_clients,
         training_round_timeout=setting.training_round_timeout,
-        num_clients=setting.num_clients,
+        idd_fraction=setting.idd_fraction,
+        num_partitions=setting.num_partitions,
+        delay_factor=setting.delay_factor,
     )
 
 
