@@ -30,12 +30,12 @@ def stacked_lstm(
 
     # Architecture
     inputs = tf.keras.layers.Input(shape=input_len)  # input_len = 80
-    embedding = tf.keras.layers.Embedding(
-        input_dim=num_classes, output_dim=embedding_dim
-    )(inputs)
-    lstm = tf.keras.layers.LSTM(units=hidden_size)(embedding)
+    #embedding = tf.keras.layers.Embedding(
+     #   input_dim=num_classes, output_dim=embedding_dim
+    #)(inputs)
+    lstm = tf.keras.layers.LSTM(units=hidden_size)(inputs)
     lstm = tf.keras.layers.LSTM(units=hidden_size)(lstm)
-    # rnn = tf.keras.layers.RNN()
+   
     outputs = tf.keras.layers.Dense(
         num_classes, kernel_initializer=kernel_initializer, activation="softmax"
     )(rnn)
