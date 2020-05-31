@@ -54,18 +54,6 @@ def read_data(train_data_dir, test_data_dir):
 
     return clients, groups, train_data, test_data
 
-
-def process_x(raw_x_batch):
-    x_batch = [word_to_indices(word) for word in raw_x_batch]
-    x_batch = np.array(x_batch)
-    return x_batch
-
-
-def process_y(raw_y_batch):
-    y_batch = [letter_to_vec(c) for c in raw_y_batch]
-    return y_batch
-
-
 def load_data(
     train_data_dir, test_data_dir, client_id: int
 ) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
@@ -125,3 +113,16 @@ def word_to_indices(word):
     for c in word:
         indices.append(ALL_LETTERS.find(c))
     return indices
+
+
+'''
+def process_x(raw_x_batch):
+    x_batch = [word_to_indices(word) for word in raw_x_batch]
+    x_batch = np.array(x_batch)
+    return x_batch
+
+
+def process_y(raw_y_batch):
+    y_batch = [letter_to_vec(c) for c in raw_y_batch]
+    return y_batch
+'''

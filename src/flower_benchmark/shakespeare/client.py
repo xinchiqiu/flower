@@ -175,14 +175,14 @@ def main() -> None:
     )
 
     # dataset is already partitioned, since natural partition
-    # TODO: how to determine the clients.cid, total 660 clients, not sure about client_setting.cid
+    # TODO
     # need to download and preprocess the dataset, make sure to have 2 .json data one for training and one for testing
-    # 660 clients
-
+    # 660 clients, change the client cid from string to int, then in the load_data function can directly find the client and its dataset.
+    
     xy_train, xy_test = load_data(
         "../dataset/shakespeare/train",
         "../dataset/shakespeare/test",
-        client_setting.cid,
+        int(client_setting.cid),
     )
 
     # Start client
