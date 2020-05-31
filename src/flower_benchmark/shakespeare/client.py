@@ -171,7 +171,7 @@ def main() -> None:
 
     # Load model
     model = stacked_lstm(
-        input_len=80, hidden_size=256, num_classes=80, embedding_size=80, seed=SEED
+        input_len=80, hidden_size=256, num_classes=80, seed=SEED
     )
 
     # dataset is already partitioned, since natural partition
