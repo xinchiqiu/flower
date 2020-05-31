@@ -23,7 +23,7 @@ emb_dim = 80
 
 
 def stacked_lstm(
-    input_len, hidden_size: int, num_classes: int, embedding_dim: int, seed: int
+    input_len, hidden_size: int, num_classes: int,  seed: int
 ) -> tf.keras.Model:
     # Kernel initializer
     kernel_initializer = tf.keras.initializers.glorot_uniform(seed=seed)
