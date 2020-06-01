@@ -199,7 +199,7 @@ def main() -> None:
     log(INFO, "Starting client, settings: %s", client_setting)
 
     # Load model
-    model = nlpmodel(
+    model = orig_lstm(
         input_len=80, hidden_size=256, num_classes=NUM_CLASSES, seed=SEED
     )
    
