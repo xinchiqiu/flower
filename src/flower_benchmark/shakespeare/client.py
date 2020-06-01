@@ -67,26 +67,32 @@ class ShakespeareClient(fl.Client):
         self.delay_factor = delay_factor
 
     def get_parameters(self) -> fl.ParametersRes:
-        # weights: fl.Weights = []
-        # TODO get current weights from local model (not get from server?)
         parameters = fl.weights_to_parameters(self.model.get_weights())
         return fl.ParametersRes(parameters=parameters)
-
-    def fit(self, ins: fl.FitIns) -> fl.FitRes:
+    def fit(self, ins: flwr.FitIns) -> flwr.FitRes:
         weights: fl.Weights = fl.parameters_to_weights(ins[0])
-        config: Dict[str, str] = ins[1]
+        config = ins[1]
+        log(
+            DEBUG,
+            "fit on %s (examples: %s), config %s",
+            self.cid,
+            self.num_examples_train,
+            config,
+        )
 
-        # Read training configuration
-        epoch_global = int(config["epoch_global"])
+        # Training configuration
+        # epoch_global = int(config["epoch_global"])
         epochs = int(config["epochs"])
         batch_size = int(config["batch_size"])
-        timeout = int(config["timeout"])
+        # lr_initial = float(config["lr_initial"])
+        # lr_decay = float(config["lr_decay"])
+        timeout = int(config["timeout"]) if "timeout" in config else None
         partial_updates = bool(int(config["partial_updates"]))
 
         # Use provided weights to update the local model
         self.model.set_weights(weights)
 
-        # train model on local dataset
+        # Train the local model using the local dataset
         completed, fit_duration, num_examples = custom_fit(
             model=self.model,
             dataset=self.ds_train,
@@ -101,17 +107,13 @@ class ShakespeareClient(fl.Client):
         # Compute the maximum number of examples which could have been processed
         num_examples_ceil = self.num_examples_train * epochs
 
-        # Return empty update if local update could not be completed in time
         if not completed and not partial_updates:
+            # Return empty update if local update could not be completed in time
             parameters = fl.weights_to_parameters([])
-            return parameters, num_examples, num_examples_ceil
-
-        # Return the refined weights and the number of examples used for training
-        parameters = fl.weights_to_parameters(self.model.get_weights())
-        return parameters, num_examples, num_examples_ceil
-
-        # TODO return tuple (trained parameters, training examples, training examples ceil)
-        # return self.get_parameters(), num_examples, num_examples_ceil
+        else:
+            # Return the refined weights and the number of examples used for training
+            parameters = fl.weights_to_parameters(self.model.get_weights())
+        return parameters, num_examples, num_examples_ceil, fit_duration
 
     def evaluate(self, ins: fl.EvaluateIns) -> fl.EvaluateRes:
         weights: fl.Weights = fl.parameters_to_weights(ins[0])
@@ -123,18 +125,44 @@ class ShakespeareClient(fl.Client):
             self.num_examples_test,
             config,
         )
-        # TODO update local model with provided weights
+        # Use provided weights to update the local model
         self.model.set_weights(weights)
 
-        # TODO evaluate model on local dataset
-        loss, _ = keras_evaluate(
+        # Evaluate the updated model on the local dataset
+        loss, acc = keras_evaluate(
             self.model, self.ds_test, batch_size=self.num_examples_test
         )
 
-        # TODO return tuple (number of local evaluation examples, loss)
-        return self.num_examples_test, loss
+        # Return the number of evaluation examples and the evaluation result (loss)
+        return self.num_examples_test, loss, acc
+
+def parse_args() -> argparse.Namespace:
+    """Parse and return commandline arguments."""
+    parser = argparse.ArgumentParser(description="Flower")
+    parser.add_argument(
+        "--server_address",
+        type=str,
+        default=DEFAULT_SERVER_ADDRESS,
+        help=f"gRPC server address (IPv6, default: {DEFAULT_SERVER_ADDRESS})",
+    )
+    parser.add_argument(
+        "--log_host", type=str, help="HTTP log handler host (no default)",
+    )
+    parser.add_argument(
+        "--setting", type=str, choices=SETTINGS.keys(), help="Setting to run.",
+    )
+    parser.add_argument("--cid", type=str, required=True, help="Client cid.")
+    return parser.parse_args()
 
 
+def get_client_setting(setting: str, cid: str) -> ClientSetting:
+    """Return client setting based on setting name and cid."""
+    for client_setting in get_setting(setting).clients:
+        if client_setting.cid == cid:
+            return client_setting
+
+    raise ClientSettingNotFound()
+'''
 def parse_args() -> argparse.Namespace:
     """Parse and return commandline arguments."""
     parser = argparse.ArgumentParser(description="Flower Shakespeare")
@@ -154,7 +182,7 @@ def parse_args() -> argparse.Namespace:
         "--index", type=int, required=True, help="Client index in settings."
     )
     return parser.parse_args()
-
+'''
 
 def main() -> None:
     """Load data, create and start client."""
@@ -164,14 +192,13 @@ def main() -> None:
 
     # Configure logger
     configure(identifier=f"client:{client_setting.cid}", host=args.log_host)
+    log(INFO, "Starting client, settings: %s", client_setting)
 
     # Load model
     model = stacked_lstm(
         input_len=80, hidden_size=256, num_classes=80, seed=SEED
     )
 
-    # dataset is already partitioned, since natural partition
-    # TODO
     # need to download and preprocess the dataset, make sure to have 2 .json data one for training and one for testing
     # 660 clients, change the client cid from string to int, then in the load_data function can directly find the client and its dataset.
     

@@ -27,13 +27,13 @@ def main() -> None:
     client_manager = fl.SimpleClientManager()
     strategy = fl.strategy.DefaultStrategy(
         fraction_fit=0.1,
-        min_fit_clients=2,
+        min_fit_clients=1,
         min_available_clients=2,
         eval_fn=centralized_evaluation_function,
         on_fit_config_fn=get_on_fit_config_fn(0.01, 60),
     )
     fl.logger.configure("server")
-    
+
     # Run server
     server = fl.Server(client_manager=client_manager, strategy=strategy)
     fl.app.start_server(
