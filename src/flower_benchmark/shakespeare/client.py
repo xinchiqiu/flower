@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 import argparse
-from logging import ERROR
+from logging import ERROR,INFO, DEBUG
 from typing import Tuple, Dict
 
 import numpy as np
@@ -23,12 +23,13 @@ import flower as fl
 from flower.logger import configure, log
 from flower_benchmark.common import load_partition
 
-# from flower_benchmark.dataset import tf_cifar_partitioned
-from flower_benchmark.model import stacked_lstm
-from flower_benchmark.tf_shakespeare.load_data import load_data
-from flower_benchmark.tf_shakespeare.settings import SETTINGS, get_setting
-from flower_benchmark.common import keras_evaluate
-from . import DEFAULT_GRPC_SERVER_ADDRESS, DEFAULT_GRPC_SERVER_PORT, SEED
+from flower_benchmark.model import orig_lstm
+from flower_benchmark.model import keyword_cnn
+from flower_benchmark.shakespeare.load_data import load_data
+from flower_benchmark.shakespeare.settings import SETTINGS, get_setting
+from flower_benchmark.common import keras_evaluate, custom_fit, build_dataset
+from . import DEFAULT_SERVER_ADDRESS, SEED, NUM_CLASSES
+from flower_benchmark.setting import ClientSetting
 
 tf.get_logger().setLevel("ERROR")
 
@@ -69,7 +70,7 @@ class ShakespeareClient(fl.Client):
     def get_parameters(self) -> fl.ParametersRes:
         parameters = fl.weights_to_parameters(self.model.get_weights())
         return fl.ParametersRes(parameters=parameters)
-    def fit(self, ins: flwr.FitIns) -> flwr.FitRes:
+    def fit(self, ins: fl.FitIns) -> fl.FitRes:
         weights: fl.Weights = fl.parameters_to_weights(ins[0])
         config = ins[1]
         log(
@@ -136,6 +137,9 @@ class ShakespeareClient(fl.Client):
         # Return the number of evaluation examples and the evaluation result (loss)
         return self.num_examples_test, loss, acc
 
+class ClientSettingNotFound(Exception):
+    """Raise when client setting could not be found."""
+
 def parse_args() -> argparse.Namespace:
     """Parse and return commandline arguments."""
     parser = argparse.ArgumentParser(description="Flower")
@@ -188,17 +192,17 @@ def main() -> None:
     """Load data, create and start client."""
     args = parse_args()
 
-    client_setting = get_setting(args.setting).clients[args.index]
+    client_setting = get_client_setting(args.setting, args.cid)
 
     # Configure logger
     configure(identifier=f"client:{client_setting.cid}", host=args.log_host)
     log(INFO, "Starting client, settings: %s", client_setting)
 
     # Load model
-    model = stacked_lstm(
-        input_len=80, hidden_size=256, num_classes=80, seed=SEED
+    model = nlpmodel(
+        input_len=80, hidden_size=256, num_classes=NUM_CLASSES, seed=SEED
     )
-
+   
     # need to download and preprocess the dataset, make sure to have 2 .json data one for training and one for testing
     # 660 clients, change the client cid from string to int, then in the load_data function can directly find the client and its dataset.
     
