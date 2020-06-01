@@ -17,3 +17,4 @@
 
 from .cnn import keyword_cnn, orig_cnn
 from .resnet import resnet50v2
+from .stacked_lstm import orig_lstm

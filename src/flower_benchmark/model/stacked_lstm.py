@@ -21,13 +21,14 @@ import tensorflow as tf
 def orig_lstm(
     input_len, hidden_size: int, num_classes: int,  seed: int
 ) -> tf.keras.Model:
+    """Create a stacked_lstm instance."""
     # Kernel initializer
     kernel_initializer = tf.keras.initializers.glorot_uniform(seed=seed)
 
     # Architecture
-    inputs = tf.keras.layers.Input(shape=input_len)  # input_len = 80
-    layers = tf.keras.layers.LSTM(units=hidden_size)(inputs)
-    layers = tf.keras.layers.LSTM(units=hidden_size)(layers)
+    inputs = tf.keras.layers.Input(shape=[None,input_len])  # input_len = 80
+    layers = tf.keras.layers.LSTM(units=hidden_size,return_sequences=True)(inputs)
+    layers = tf.keras.layers.LSTM(units=hidden_size,return_sequences=True)(layers)
     outputs = tf.keras.layers.Dense(
         num_classes, kernel_initializer=kernel_initializer, activation="softmax"
     )(layers)
