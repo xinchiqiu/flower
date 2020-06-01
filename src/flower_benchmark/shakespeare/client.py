@@ -24,7 +24,7 @@ from flower.logger import configure, log
 from flower_benchmark.common import load_partition
 
 from flower_benchmark.model import orig_lstm
-from flower_benchmark.model import keyword_cnn
+
 from flower_benchmark.shakespeare.load_data import load_data
 from flower_benchmark.shakespeare.settings import SETTINGS, get_setting
 from flower_benchmark.common import keras_evaluate, custom_fit, build_dataset
