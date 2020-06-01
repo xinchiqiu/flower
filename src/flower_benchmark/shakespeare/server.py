@@ -32,6 +32,8 @@ def main() -> None:
         eval_fn=centralized_evaluation_function,
         on_fit_config_fn=get_on_fit_config_fn(0.01, 60),
     )
+    
+    fl.logger.configure("server")
 
     # Run server
     server = fl.Server(client_manager=client_manager, strategy=strategy)
