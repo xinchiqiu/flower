@@ -2,6 +2,8 @@
 .flower_ops
 plot/
 hotkey_data/
+src/flower_benchmark/dataset/leaf_shakespeare/shakespeare/data
+src/flower_benchmark/dataset/leaf_shakespeare/shakespeare/meta
 
 # Editor
 .vscode
