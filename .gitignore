@@ -2,6 +2,7 @@
 .flower_ops
 plot/
 hotkey_data/
+shakespeare_data/
 
 # Editor
 .vscode
